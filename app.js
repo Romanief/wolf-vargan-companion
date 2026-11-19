@@ -78,6 +78,43 @@ function commonActions(){
  <dt>Help</dt><dd>Give an ally a hand. Ask the DM if they can roll twice and take the higher result.</dd>
  </dl></section>`;
 }
+function combatView(inspiration){
+ const spellMenuOpen = document.querySelector('#combat-spells')?.open;
+ const weapons = grid([
+  card('Rapier strike','Melee · within 5 ft','blade','weapon','Rapier'),
+  card('Dagger strike','Melee 5 ft · throw 20/60 ft','blade','weapon','Dagger')
+ ]);
+ const reactions = grid([
+  card('Hellish Rebuke',state.rebuke?'When damaged · up to 60 ft':'Used · returns after a long rest','magic','rebuke'),
+  card('Opportunity attack','When a foe leaves your 5-ft reach','blade','weapon','Opportunity')
+ ]);
+ return `<section class="combat-start" aria-label="Start of combat">
+  <h3 class="kicker">Start of combat</h3>
+  ${card('Roll initiative','Roll once to find your place in the turn order · +3','dice','skill','Initiative')}
+ </section>
+ <h2>Take your turn</h2>
+ <p class="intro">You can move, take one action and use one bonus action, in any order.</p>
+ <section class="turn-part" aria-label="Movement">
+  <h3>Movement</h3><p>Move up to 30 ft. You can split the distance before and after your action.</p>
+ </section>
+ <section class="turn-part" aria-label="Action">
+  <h3>Action</h3><p>Choose one.</p>
+  <h4 class="kicker">Attack</h4>${weapons}
+  <details class="turn-spells" id="combat-spells" ${spellMenuOpen?'open':''}><summary>Cast a spell</summary>
+   <p class="slot-tip">Spells of the same level share uses.</p>
+   ${spells(['Vicious Mockery','Minor Illusion','Thaumaturgy','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility'])}
+  </details>
+  ${commonActions()}
+ </section>
+ <section class="turn-part" aria-label="Bonus action">
+  <h3>Bonus action</h3><p>You may also inspire one ally this turn.</p>
+  ${card(inspiration,'Within 60 ft · must hear you','sound','inspire')}
+ </section>
+ <section class="combat-reactions" aria-label="Reactions">
+  <h3 class="kicker">Reactions</h3>${reactions}
+ </section>
+ <div class="foot">${btn('Saving throws','saves')}</div>`;
+}
 function render(){
  const exp=state.mode==='exploration';
  const inspiration='Inspire an ally '+charges(state.inspire,3,'inspiration uses');
@@ -86,7 +123,7 @@ function render(){
  document.querySelector('nav').dataset.active=state.mode;
  for(const m of ['exploration','combat']){$(m).setAttribute('aria-pressed',String(state.mode===m));$(m).innerHTML=icon(m==='combat'?'blade':'explore')+' '+(m==='combat'?'Combat':'Exploration')}
  $('quick').innerHTML=btn('Resources','resources')+btn('Rest','rest');
- $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn(inspiration,'inspire')+'</div><h3 class="kicker">Exploration magic</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):'<h2>Take your turn</h2><p class="intro">Move up to 30 ft. Pick one action. You also get one bonus action.</p>'+grid([card('Roll initiative','At the start · +3','dice','skill','Initiative'),card('Rapier strike','Action · within 5 ft','blade','weapon','Rapier'),card('Dagger strike','Melee 5 ft · throw 20/60 ft','blade','weapon','Dagger'),card(inspiration,'Bonus action · 60 ft','sound','inspire')])+commonActions()+'<h3 class="kicker">Magic · one action</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Vicious Mockery','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility','Minor Illusion','Thaumaturgy'])+'<h3 class="kicker">When someone else acts</h3>'+grid([card('Hellish Rebuke',state.rebuke?'When damaged · up to 60 ft':'Used · returns after a long rest','magic','rebuke'),card('Opportunity attack','Reaction · foe leaves your 5-ft reach','blade','weapon','Opportunity')])+'<div class="foot">'+btn('Saving throws','saves')+'</div>';
+ $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn(inspiration,'inspire')+'</div><h3 class="kicker">Exploration magic</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):combatView(inspiration);
  $('vitals').innerHTML=(state.armourBonus?row('Flourish AC',13+state.armourBonus)+btn('My next turn','endac'):'')+row('Hit points',state.hp+' / 24')+'<div class="meter"><i style="display:block;width:'+state.hp/24*100+'%"></i></div>'+btn('Adjust HP','hp')+(state.hp===0?btn('Death saves','death'):'')+row('Spell slots · level 1',state.first+' / 4')+row('Spell slots · level 2',state.second+' / 2')+row('Inspiration',state.inspire+' / 3')+(state.focus?row('Concentrating',state.focus)+btn('End concentration','endfocus'):'')+'<div class="foot">'+btn('Rest','rest')+(previous?btn('Undo last change','undo'):'')+'</div>';
 }
 function rollCheck(name,bonus){const n=die(20);modal(name,'<div class="result"><strong class="rollval">'+(n+bonus)+'</strong>Die '+n+' '+signed(bonus)+'</div><p>Tell the DM your total.</p>')}
