@@ -13,3 +13,7 @@ nav{position:relative;isolation:isolate}nav:before{content:"";position:absolute;
 @media(prefers-reduced-motion:reduce){nav:before{transition:none}.tumble,dialog[open]{animation:none}}
 
 .range{display:block;margin-top:.25rem;font-size:.8rem;color:#d3dbe1}
+
+.turn-options dl{margin:0;padding:0 14px;display:grid;grid-template-columns:max-content 1fr;column-gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:13px}
+.turn-options dt,.turn-options dd{padding:10px 0;border-bottom:1px solid var(--line)}
+.turn-options dt{font-weight:600}.turn-options dd{margin:0;color:var(--dim)}.turn-options dt:last-of-type,.turn-options dd:last-of-type{border:0}
