@@ -4,7 +4,12 @@ const fresh = {hp:24,first:4,second:2,inspire:3,rebuke:1,dice:3,focus:'',mode:'e
 const key = 'frostbound.wolf.v1';
 let state = {...fresh}, previous, timer;
 try { Object.assign(state,JSON.parse(localStorage.getItem(key))); } catch {}
-const die = sides => Math.floor(Math.random()*sides)+1;
+const pendingRolls = [];
+function die(sides) {
+ const value = Math.floor(Math.random()*sides)+1;
+ pendingRolls.push({sides,value});
+ return value;
+}
 const signed = n => n<0 ? String(n) : '+'+n;
 const btn = (label,action,value='',cls='') => '<button class="'+cls+'" data-do="'+action+'" data-value="'+value+'">'+label+'</button>';
 const icons = {
@@ -37,15 +42,30 @@ const magic = {
 function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch{toast('This browser could not save your changes.')}render()}
 function change(fn){previous={...state};fn();save()}
 function toast(t){$('feedback').textContent=t;clearTimeout(timer);timer=setTimeout(()=>$('feedback').textContent='',3000)}
-function modal(title,html){$('heading').textContent=title;$('body').innerHTML=html;if(!$('dialog').open)$('dialog').showModal();$('dialog').scrollTop=0}
+function modal(title,html){$('heading').textContent=title;$('body').innerHTML=diceTray(pendingRolls.splice(0))+html;dieReferences($('body'));if(!$('dialog').open)$('dialog').showModal();$('dialog').scrollTop=0}
 function grid(items){return '<div class="grid">'+items.join('')+'</div>'}
-function spells(names){return grid(names.map(n=>card(n,magic[n][1],n==='Minor Illusion'?'mask':'magic','spell',n)))}
+function charges(left,max,label){
+ return '<span class="charge" aria-label="'+left+' of '+max+' '+label+' remaining">'+left+'/'+max+'</span>';
+}
+function spells(names){
+ const headings=['Cantrips · free to use','Level 1 spells','Level 2 spells'];
+ return headings.map((heading,level)=>{
+  const group=names.filter(n=>magic[n][0]===level);
+  if(!group.length)return '';
+  const badge=level===0?'':charges(level===1?state.first:state.second,level===1?4:2,'level '+level+' slots');
+  return '<h3 class="magic-level">'+heading+'</h3>'+grid(group.map(n=>card(n+' '+badge,magic[n][1],n==='Minor Illusion'?'mask':'magic','spell',n)));
+ }).join('');
+}
 function row(k,v){return '<div class="row"><span>'+k+'</span><strong>'+v+'</strong></div>'}
 function render(){
  const exp=state.mode==='exploration';
+ const inspiration='Inspire an ally '+charges(state.inspire,3,'inspiration uses');
+ $('stats').innerHTML=btn('<span class="stat-label">Hit points</span><b>'+state.hp+' <small>/ 24</small></b><span class="hp-track"><i style="width:'+100*state.hp/24+'%"></i></span>','hp','','hp-stat')+
+ '<div><span class="stat-label">Armour class</span><b>'+(13+state.armourBonus)+' <small>AC</small></b></div><div><span class="stat-label">Base speed</span><b>30 <small>ft</small></b></div>';
+ document.querySelector('nav').dataset.active=state.mode;
  for(const m of ['exploration','combat']){$(m).setAttribute('aria-pressed',String(state.mode===m));$(m).innerHTML=icon(m==='combat'?'blade':'explore')+' '+(m==='combat'?'Combat':'Exploration')}
- $('quick').innerHTML=btn('HP <b>'+state.hp+'/24</b>','hp')+btn('Slots <b>'+state.first+' · '+state.second+'</b>','resources')+btn('Rest','rest');
- $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn('Inspire an ally','inspire')+'</div><h3 class="kicker">Exploration magic</h3>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):'<h2>Take your turn</h2><p class="intro">Move up to 30 ft. Pick one action. You also get one bonus action.</p>'+grid([card('Roll initiative','At the start · +3','dice','skill','Initiative'),card('Rapier strike','Action · within 5 ft','blade','weapon','Rapier'),card('Dagger strike','Action · melee or thrown','blade','weapon','Dagger'),card('Inspire an ally','Bonus action · 60 ft','sound','inspire')])+'<h3 class="kicker">Cast a spell · one action</h3>'+spells(['Vicious Mockery','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility','Minor Illusion','Thaumaturgy'])+'<h3 class="kicker">When someone else acts</h3>'+grid([card('Hellish Rebuke','Reaction · after taking damage','magic','rebuke'),card('Opportunity attack','Reaction · foe leaves reach','blade','weapon','Opportunity')])+'<div class="foot">'+btn('Saving throws','saves')+btn('Other actions','other')+'</div>';
+ $('quick').innerHTML=btn('Resources','resources')+btn('Rest','rest');
+ $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn(inspiration,'inspire')+'</div><h3 class="kicker">Exploration magic</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):'<h2>Take your turn</h2><p class="intro">Move up to 30 ft. Pick one action. You also get one bonus action.</p>'+grid([card('Roll initiative','At the start · +3','dice','skill','Initiative'),card('Rapier strike','Action · within 5 ft','blade','weapon','Rapier'),card('Dagger strike','Action · melee or thrown','blade','weapon','Dagger'),card(inspiration,'Bonus action · 60 ft','sound','inspire')])+'<h3 class="kicker">Magic · one action</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Vicious Mockery','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility','Minor Illusion','Thaumaturgy'])+'<h3 class="kicker">When someone else acts</h3>'+grid([card('Hellish Rebuke '+charges(state.rebuke,1,'infernal uses'),'Reaction · after taking damage','magic','rebuke'),card('Opportunity attack','Reaction · foe leaves reach','blade','weapon','Opportunity')])+'<div class="foot">'+btn('Saving throws','saves')+btn('Other actions','other')+'</div>';
  $('vitals').innerHTML=(state.armourBonus?row('Flourish AC',13+state.armourBonus)+btn('My next turn','endac'):'')+row('Hit points',state.hp+' / 24')+'<div class="meter"><i style="display:block;width:'+state.hp/24*100+'%"></i></div>'+btn('Adjust HP','hp')+(state.hp===0?btn('Death saves','death'):'')+row('Spell slots · level 1',state.first+' / 4')+row('Spell slots · level 2',state.second+' / 2')+row('Inspiration',state.inspire+' / 3')+(state.focus?row('Concentrating',state.focus)+btn('End concentration','endfocus'):'')+'<div class="foot">'+btn('Rest','rest')+(previous?btn('Undo last change','undo'):'')+'</div>';
 }
 function rollCheck(name,bonus){const n=die(20);modal(name,'<div class="result"><strong class="rollval">'+(n+bonus)+'</strong>Die '+n+' '+signed(bonus)+'</div><p>Tell the DM your total.</p>')}
@@ -72,7 +92,7 @@ function action(op,value){
  if(level)change(()=>{state[pool]--;if(focus)state.focus=n});
  modal(n,'<p>'+desc+'</p>'+(size?rollDamage(count+(base?level-base:0),size,0,n==='Thunderwave'||n==='Shatter'?'Thunder':'Psychic'):'')+(focus?'<p>Concentration started.</p>':'')+(level?'<p>Level '+level+' slots left: '+state[pool]+'.</p>':'')+btn('Done','close'));break}
  case 'weapon':weapon(value);break;
- case 'hit':{const [n,m]=value.split('|');lastHit=true;modal(n,rollDamage(Number(m),n==='Dagger'?4:8,4,'Piercing')+(n==='Opportunity'?'':'<p>Taking the Attack action gives you 10 ft extra speed this turn. Once on a hit, you may spend inspiration for a flourish.</p>'+btn('Choose a flourish','flourishes',m)));break}
+ case 'hit':{const [n,m]=value.split('|');lastHit=true;modal(n,rollDamage(Number(m),n==='Dagger'?4:8,4,'Piercing')+(n==='Opportunity'?'':'<p>Taking the Attack action gives you 10 ft extra speed this turn. Once on a hit, you may spend inspiration for a flourish.</p>'+btn('Choose a flourish '+charges(state.inspire,3,'inspiration uses'),'flourishes',m)));break}
  case 'flourishes':modal('Blade Flourish',state.inspire&&lastHit?'<p>Spend one inspiration. Pick one effect.</p>'+['Defensive','Slashing','Mobile'].map(n=>btn(n,'flourish',n+'|'+value)).join(''):'<p>No flourish available.</p>');break;
  case 'flourish':{if(!state.inspire||!lastHit)return;lastHit=false;const [n,m]=value.split('|'),r=die(6),extra=m==='2'?die(6):0;
  change(()=>{state.inspire--;if(n==='Defensive')state.armourBonus=r});modal(n+' Flourish','<p>Add <b>'+(r+extra)+'</b> damage to the hit.</p><p>'+({Defensive:'Your armour class is '+(13+r)+' until your next turn.',Slashing:'Deal '+r+' damage to any other creatures you choose within 5 ft of you.',Mobile:'Push the target up to '+(5+r)+' ft away. You may use your reaction to move up to your speed to a space within 5 ft of it.'}[n])+'</p>');break}
@@ -93,7 +113,7 @@ function action(op,value){
  case 'undo':if(previous){const notes=state.notes,mode=state.mode;state={...previous,notes,mode};previous=null;save();if($('dialog').open)$('dialog').close();toast('Last change undone.')}break;
  }
 }
-document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.mode){state.mode=b.dataset.mode;save()}else action(b.dataset.do,b.dataset.value)});
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.dataset.mode){if(state.mode===b.dataset.mode)return;state.mode=b.dataset.mode;save();if(!matchMedia('(prefers-reduced-motion: reduce)').matches)$('actions').animate([{opacity:.5,transform:'translateX('+(state.mode==='combat'?10:-10)+'px)'},{opacity:1,transform:'none'}],{duration:220,easing:'ease-out'})}else action(b.dataset.do,b.dataset.value)});
 $('notes').value=state.notes;
 $('notes').addEventListener('input',e=>{state.notes=e.target.value;save()});
 $('dialog').addEventListener('click',e=>{if(e.target===$('dialog')){const box=$('dialog').getBoundingClientRect();if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)$('dialog').close()}});
