@@ -11,3 +11,5 @@ nav{position:relative;isolation:isolate}nav:before{content:"";position:absolute;
 @keyframes tumble{0%{transform:perspective(200px) translate(-14px,-6px) rotateX(130deg) rotateZ(-115deg);opacity:.25}60%{transform:perspective(200px) translate(3px,1px) rotateX(-18deg) rotateZ(12deg)}85%{transform:rotate(-4deg)}100%{transform:none}}dialog[open]{animation:arrive .18s ease-out}@keyframes arrive{from{opacity:.5;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(max-width:730px){#stats>*{padding:8px 10px}#stats{margin:9px 0}#stats b{font-size:1.2rem}#quick button{flex:0 1 auto}#quick{justify-content:end;margin-bottom:8px}}
 @media(prefers-reduced-motion:reduce){nav:before{transition:none}.tumble,dialog[open]{animation:none}}
+
+.range{display:block;margin-top:.25rem;font-size:.8rem;color:#d3dbe1}

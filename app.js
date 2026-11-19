@@ -47,13 +47,24 @@ function grid(items){return '<div class="grid">'+items.join('')+'</div>'}
 function charges(left,max,label){
  return '<span class="charge" aria-label="'+left+' of '+max+' '+label+' remaining">'+left+'/'+max+'</span>';
 }
+const spellRange = {
+ 'Minor Illusion':'Up to 30 ft',
+ Thaumaturgy:'Up to 30 ft',
+ 'Vicious Mockery':'Up to 60 ft · must hear you',
+ 'Dissonant Whispers':'Up to 60 ft',
+ Bane:'Up to 30 ft',
+ Thunderwave:'Close · 15-ft cube from you',
+ 'Faerie Fire':'Up to 60 ft · 20-ft cube',
+ Shatter:'Up to 60 ft · 10-ft radius',
+ Invisibility:'Touch'
+};
 function spells(names){
  const headings=['Cantrips · free to use','Level 1 spells','Level 2 spells'];
  return headings.map((heading,level)=>{
   const group=names.filter(n=>magic[n][0]===level);
   if(!group.length)return '';
   const badge=level===0?'':charges(level===1?state.first:state.second,level===1?4:2,'level '+level+' slots');
-  return '<h3 class="magic-level">'+heading+'</h3>'+grid(group.map(n=>card(n+' '+badge,magic[n][1],n==='Minor Illusion'?'mask':'magic','spell',n)));
+  return '<h3 class="magic-level">'+heading+' '+badge+'</h3>'+grid(group.map(n=>card(n,magic[n][1]+'<span class="range">'+spellRange[n]+'</span>',n==='Minor Illusion'?'mask':'magic','spell',n)));
  }).join('');
 }
 function row(k,v){return '<div class="row"><span>'+k+'</span><strong>'+v+'</strong></div>'}
@@ -65,7 +76,7 @@ function render(){
  document.querySelector('nav').dataset.active=state.mode;
  for(const m of ['exploration','combat']){$(m).setAttribute('aria-pressed',String(state.mode===m));$(m).innerHTML=icon(m==='combat'?'blade':'explore')+' '+(m==='combat'?'Combat':'Exploration')}
  $('quick').innerHTML=btn('Resources','resources')+btn('Rest','rest');
- $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn(inspiration,'inspire')+'</div><h3 class="kicker">Exploration magic</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):'<h2>Take your turn</h2><p class="intro">Move up to 30 ft. Pick one action. You also get one bonus action.</p>'+grid([card('Roll initiative','At the start · +3','dice','skill','Initiative'),card('Rapier strike','Action · within 5 ft','blade','weapon','Rapier'),card('Dagger strike','Action · melee or thrown','blade','weapon','Dagger'),card(inspiration,'Bonus action · 60 ft','sound','inspire')])+'<h3 class="kicker">Magic · one action</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Vicious Mockery','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility','Minor Illusion','Thaumaturgy'])+'<h3 class="kicker">When someone else acts</h3>'+grid([card('Hellish Rebuke '+charges(state.rebuke,1,'infernal uses'),'Reaction · after taking damage','magic','rebuke'),card('Opportunity attack','Reaction · foe leaves reach','blade','weapon','Opportunity')])+'<div class="foot">'+btn('Saving throws','saves')+btn('Other actions','other')+'</div>';
+ $('actions').innerHTML=exp?'<h2>Explore the wilds</h2><p class="intro">Tell the DM what Wolf tries. Roll when asked.</p>'+grid([card('Look around','Perception · +5','eye','skill','Perception'),card('Talk it through','Persuasion · +5','talk','skill','Persuasion'),card('Track & navigate','Survival · +3','trail','skill','Survival'),card('Intimidate','Intimidation · +7','mask','skill','Intimidation')])+'<div class="foot">'+btn('All skill rolls','skills')+btn(inspiration,'inspire')+'</div><h3 class="kicker">Exploration magic</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Minor Illusion','Thaumaturgy','Invisibility']):'<h2>Take your turn</h2><p class="intro">Move up to 30 ft. Pick one action. You also get one bonus action.</p>'+grid([card('Roll initiative','At the start · +3','dice','skill','Initiative'),card('Rapier strike','Action · within 5 ft','blade','weapon','Rapier'),card('Dagger strike','Melee 5 ft · throw 20/60 ft','blade','weapon','Dagger'),card(inspiration,'Bonus action · 60 ft','sound','inspire')])+'<h3 class="kicker">Magic · one action</h3><p class="slot-tip">Spells of the same level share uses.</p>'+spells(['Vicious Mockery','Dissonant Whispers','Faerie Fire','Bane','Thunderwave','Shatter','Invisibility','Minor Illusion','Thaumaturgy'])+'<h3 class="kicker">When someone else acts</h3>'+grid([card('Hellish Rebuke',state.rebuke?'When damaged · up to 60 ft':'Used · returns after a long rest','magic','rebuke'),card('Opportunity attack','Reaction · foe leaves your 5-ft reach','blade','weapon','Opportunity')])+'<div class="foot">'+btn('Saving throws','saves')+btn('Other actions','other')+'</div>';
  $('vitals').innerHTML=(state.armourBonus?row('Flourish AC',13+state.armourBonus)+btn('My next turn','endac'):'')+row('Hit points',state.hp+' / 24')+'<div class="meter"><i style="display:block;width:'+state.hp/24*100+'%"></i></div>'+btn('Adjust HP','hp')+(state.hp===0?btn('Death saves','death'):'')+row('Spell slots · level 1',state.first+' / 4')+row('Spell slots · level 2',state.second+' / 2')+row('Inspiration',state.inspire+' / 3')+(state.focus?row('Concentrating',state.focus)+btn('End concentration','endfocus'):'')+'<div class="foot">'+btn('Rest','rest')+(previous?btn('Undo last change','undo'):'')+'</div>';
 }
 function rollCheck(name,bonus){const n=die(20);modal(name,'<div class="result"><strong class="rollval">'+(n+bonus)+'</strong>Die '+n+' '+signed(bonus)+'</div><p>Tell the DM your total.</p>')}
@@ -98,7 +109,7 @@ function action(op,value){
  change(()=>{state.inspire--;if(n==='Defensive')state.armourBonus=r});modal(n+' Flourish','<p>Add <b>'+(r+extra)+'</b> damage to the hit.</p><p>'+({Defensive:'Your armour class is '+(13+r)+' until your next turn.',Slashing:'Deal '+r+' damage to any other creatures you choose within 5 ft of you.',Mobile:'Push the target up to '+(5+r)+' ft away. You may use your reaction to move up to your speed to a space within 5 ft of it.'}[n])+'</p>');break}
  case 'inspire':modal('Inspire an ally','<p>Pick a companion within 60 ft who can hear you. Say “Trust me. You’ve got this.”</p><p>Within 10 minutes, they can add 1d6 to one attack, check or save after rolling, before the result is announced.</p>'+ (state.inspire?btn('Give inspiration · '+state.inspire+' left','give','','primary'):'<p>Out of inspiration. A long rest restores it.</p>'));break;
  case 'give':if(state.inspire){change(()=>state.inspire--);modal('Ally inspired','<p>Tell them they have a d6 to use within 10 minutes.</p>')}break;
- case 'rebuke':modal('Hellish Rebuke','<p>When a creature you can see within 60 ft damages you, use your reaction. It makes a Dexterity save against 13. Deal 3d10 fire damage, half on a success.</p>'+(state.rebuke?btn('Use infernal magic','burn','','primary'):'<p>Used. Returns after a long rest.</p>'));break;
+ case 'rebuke':modal('Hellish Rebuke','<p>When a creature you can see within 60 ft damages you, use your reaction. It makes a Dexterity save against 13. Deal 3d10 fire damage, half on a success.</p>'+(state.rebuke?btn('Use infernal magic · 1/1','burn','','primary'):'<p>Used. Returns after a long rest.</p>'));break;
  case 'burn':if(state.rebuke){change(()=>state.rebuke=0);modal('Hellish Rebuke',rollDamage(3,10,0,'Fire')+'<p>Halve the total if the target saves.</p>')}break;
  case 'other':modal('Other actions','<p><b>Dash</b> · Move your speed again.</p><p><b>Disengage</b> · Leave an enemy’s reach safely this turn.</p><p><b>Dodge</b> · Attacks from enemies you can see have disadvantage, and you have advantage on Dexterity saves until your next turn starts.</p><p><b>Help</b> · Give a companion advantage on a suitable check or attack. Ask the DM.</p>');break;
  case 'hp':modal('Adjust hit points',row('Current HP',state.hp+' / 24')+'<p><label>Amount <input id="amount" type="number" inputmode="numeric" min="1" step="1" value="1"></label></p>'+btn('Take damage','damage')+btn('Heal','heal'));break;
